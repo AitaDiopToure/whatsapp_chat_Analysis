@@ -1,13 +1,14 @@
 import re
 import pandas as pd
+
 def preprocess(data):
-    pattern = '\d{1,2}/\d{1,2}/\d{2,4},\s\d{1,2}:\d{2}\s-\s'
+    pattern = r'\d{1,2}/\d{1,2}/\d{2,4},\s\d{1,2}:\d{2}\s-\s'
 
     messages = re.split(pattern, data)[1:]
     dates = re.findall(pattern, data)
 
     df = pd.DataFrame({'user_message': messages, 'message_date': dates})
-    # convert message_date type
+    # Convertir le type de message_date
     df['message_date'] = pd.to_datetime(df['message_date'], format='%d/%m/%Y, %H:%M - ')
 
     df.rename(columns={'message_date': 'date'}, inplace=True)
@@ -17,7 +18,7 @@ def preprocess(data):
     messages = []
     for message in df['user_message']:
         entry = re.split('([\w\W]+?):\s', message)
-        if entry[1:]:  # user name
+        if len(entry) > 1:  # Nom de l'utilisateur présent
             users.append(entry[1])
             messages.append(" ".join(entry[2:]))
         else:
@@ -36,5 +37,16 @@ def preprocess(data):
     df['day_name'] = df['date'].dt.day_name()
     df['hour'] = df['date'].dt.hour
     df['minute'] = df['date'].dt.minute
+
+    period = []
+    for hour in df[['day_name', 'hour']]['hour']:
+        if hour == 23:
+            period.append(str(hour) + "-" + str('00'))
+        elif hour == 0:
+            period.append(str('00') + "-" + str(hour + 1))
+        else:
+            period.append(str(hour) + "-" + str(hour + 1))
+
+    df['period'] = period
 
     return df
